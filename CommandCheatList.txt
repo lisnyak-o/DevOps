@@ -1,0 +1,96 @@
+#MonitorTools
+
+ps -aux - display all processes in system
+-e: display information about all processes.
+-f: show detailed information about processes.
+
+Use "ps -C <process name>" to display information about a specific process.
+
+ ps aux | grep ping
+ ps -u
+
+top - real-time process
+
+monitoring tools include "htop" and "glances" need install.
+
+.SERVICE
+service --status-all - display all service
+service ngnix - path
+
+.systemctl
+
+
+.systemd-analyze
+
+systemd-analyze unit-paths | grep '^/run'
+
+Display processes
+
+ls /proc
+cat /proc/90/status
+
+Showing logind configuration
+
+$ systemd-analyze cat-config systemd/logind.conf
+# /etc/systemd/logind.conf
+
+Display a tree-like structure of processes
+
+pstree [OPTIONS]
+Options:
+● -p: Shows process PIDs.
+● -u: Shows user names.
+● -h: Highlights the current process and its ancestors.
+● -s: Displays command-line arguments.
+
+Basic usage: pgrep [OPTIONS] PATTERN
+Options:
+● -a: Displays the entire command line for each process.
+● -l: Displays the process name and the entire command line.
+● -u: Searches for processes owned by a specific user.
+● -f: Searches for processes based on the full command line.
+
+Display processes and info about file in currently open.
+Basic usage: lsof [OPTIONS]
+Options:
+● -p: Shows open files for a specific process.
+● -u: Shows open files for a specific user.
+● -i: Shows open files for a specific network socket.
+● -c: Shows open files for a specific command name.
+
+Interrupt signals
+
+Sending signals with the kill command
+The kill command is used to send signals to processes.
+● The syntax for the kill command is "kill [signal] [process ID]".
+● For example, "kill -SIGINT 1234" would send a SIGINT signal to the process with ID 1234.
+
+Signal for kill
+kill -l
+killall ping
+kill -s SIGCHLD PPID
+
+
+ sysctl kernel.pid_max
+
+ sudo deluser --remove-home ім'я_користувача
+
+CHMOD - ЧМО-Д
+----------------------------
+7 = read, write & execute
+6 = read & write
+5 = read & execute
+4 = read
+3 = write & execute
+2 = write
+1 = execute
+---------------------------------------------------------------
+- chmod 600	только владелец файла может читать/записывать
+- chmod 644	владелец файла может читать и записывать, члены группы и остальные - только читать
+- chmod 666	любой пользователь может читать/записывать
+- chmod 700	только владелец файла, может читать/записывать и запускать на исполнение
+- chmod 711	владелец файла, может читать/записывать и запускать на исполнение, члены группы и остальные могут запускать на исполнение, но не могут читать и изменять
+- chmod 755	владелец файла, может читать/записывать и запускать на исполнение, члены группы и остальные могут читать и запускать на исполнение, но не могут записывать
+- chmod 777	любой пользователь может читать/записывать и запускать на исполнение
+- chmod 700	только владелец может входить в этот каталог, читать и записывать в него файлы
+- chmod 755	любой пользователь может входить в этот каталог и читать содержимое каталога, но изменять содержимое может только владелец
