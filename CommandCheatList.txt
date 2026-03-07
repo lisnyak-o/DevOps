@@ -1,3 +1,6 @@
+Порада: Якщо ви редагували скрипт у Windows (через WSL), там могли з'явитися DOS-закінчення рядків (\r\n). Виправте це командою sed -i 's/\r$//' /usr/local/bin/logger.sh
+
+
 #MonitorTools
 
 ps -aux - display all processes in system
@@ -13,9 +16,13 @@ top - real-time process
 
 monitoring tools include "htop" and "glances" need install.
 
+
+jobs -l
+
 .SERVICE
 service --status-all - display all service
 service ngnix - path
+
 
 .systemctl
 
@@ -70,13 +77,23 @@ kill -l
 killall ping
 kill -s SIGCHLD PPID
 
+ls -lrt | grep logger.sh
 
  sysctl kernel.pid_max
 
  sudo deluser --remove-home ім'я_користувача
 
+ . Скиньте блокування systemd
+Поки ви не скинете статус «failed», сервіс не захоче запускатися знову:
+
+sudo systemctl reset-failed nameservice
+
 CHMOD - ЧМО-Д
-----------------------------
+
+sudo chmod 755 /usr/local/bin/logger.sh
+# Переконуємось, що власник — root (але запускати буде nobody)
+sudo chown root:root /usr/local/bin/logger.sh
+---------------------------------------------------------------------------
 7 = read, write & execute
 6 = read & write
 5 = read & execute
@@ -85,6 +102,15 @@ CHMOD - ЧМО-Д
 2 = write
 1 = execute
 ---------------------------------------------------------------
+0: No permission (---)
+● 1: Execute permission (--x)
+● 2: Write permission (-w-)
+● 3: Write and execute permissions (-wx)
+● 4: Read permission (r--)
+● 5: Read and execute permissions (r-x)
+● 6: Read and write permissions (rw-)
+● 7: Read, write, and execute permissions (rwx)
+
 - chmod 600	только владелец файла может читать/записывать
 - chmod 644	владелец файла может читать и записывать, члены группы и остальные - только читать
 - chmod 666	любой пользователь может читать/записывать
@@ -94,3 +120,97 @@ CHMOD - ЧМО-Д
 - chmod 777	любой пользователь может читать/записывать и запускать на исполнение
 - chmod 700	только владелец может входить в этот каталог, читать и записывать в него файлы
 - chmod 755	любой пользователь может входить в этот каталог и читать содержимое каталога, но изменять содержимое может только владелец
+
+
+Для перегляду логів у bash використовуйте команди tail -f (для моніторингу в реальному часі), cat, less або grep (для пошуку) у каталозі /var/log. Найпопулярніші лог-файли: /var/log/syslog (загальний) та /var/log/auth.log (аутентифікація). Для сучасних систем використовуйте journalctl.
+
+Основні команди для перегляду логів:
+
+
+tail -f /var/log/syslog: Перегляд останніх 10 рядків і відстеження нових записів у реальному часі.
+
+less /var/log/syslog: Зручний перегляд великих файлів (навігація стрілками, вихід — q).
+cat /var/log/dmesg: Виведення всього вмісту файлу (краще для малих файлів).
+
+grep "помилка" /var/log/syslog: Пошук конкретного слова у лог-файлі.
+
+journalctl -xe: Перегляд системних логів systemd з поясненнями останніх помилок
+journalctl: Показує всі системні логи.
+journalctl -u service_name: Логи конкретного сервісу (наприклад, nginx).
+journalctl -f: Перегляд нових логів у реальному часі.
+
+Важливі лог-файли в /var/log/:
+/var/log/syslog / /var/log/messages: Глобальні системні повідомлення.
+/var/log/auth.log / /var/log/secure: Логи авторизації та входу.
+/var/log/kern.log: Логи ядра Linux.
+/var/log/dmesg: Повідомлення драйверів пристроїв.
+
+
+All users & groups
+
+ cut -d: -f1 /etc/passwd
+ getent passwd - Виводить список користувачів, включаючи тих, що додані через мережеві служби.
+
+ переглянути всі групи в Linux, використовуйте команду cat /etc/group
+
+ id username
+Групи конкретного я_користувача
+ groups username
+
+Додавання користувачів до цієї групи:
+
+sudo usermod -aG shared_group user1
+sudo usermod -aG shared_group user2
+
+Створення директорії та зміна групи-власника:
+
+sudo mkdir -p /mnt/shared_folder
+
+sudo chgrp -R shared_group /mnt/shared_folder
+Змінити групу-власника: 
+sudo chown :developers /mbt/shared_folder
+
+Налаштування прав доступу (770 - читання/запис/виконання для власника та групи):
+
+sudo chmod -R 770 /mnt/shared_folder
+
+Sticky Bit (опціонально): якщо ви хочете, щоб користувачі могли видаляти лише власні файли (як у /tmp), використовуйте 1775 замість 2775
+
+Липучість
+sudo chmod +t test_dir/
+
+Встановлення SGID (Set Group ID):
+Це гарантує, що всі нові файли, створені в папці, будуть автоматично належати групі shared_group, а не основній групі користувача, що створив файл.
+
+sudo chmod g+s /mnt/shared_folder
+
+Стандартні права Linux іноді скидаються при копіюванні файлів. Для надійного налаштування "прав за замовчуванням" використовуйте POSIX ACL:
+sudo setfacl -d -m g:developers:rwx /srv/shared_folder.
+Флаг -d (default) встановлює правила для всіх майбутніх файлів у цій папці.
+
+UMASK
+The umask value can be set in the user's shell startup files, such as ~/.bashrc or
+~/.bash_profile.
+
+
+Встановлення ACL за замовчуванням (для нових файлів у директорії):
+setfacl -d -m g:groupname:rX directory
+
+Надання права читання та виконання (rX) групі:
+setfacl -m g:groupname:rx file
+
+Надання права читання користувачу:
+setfacl -m u:username:r file
+
+!!!!Revoke execute permission for a group
+● setfacl -m g:admins:-x directory
+
+-m (modify): змінити/додати ACL
+-x (remove): видалити права користувача/групи
+-b (remove-all): видалити всі розширені ACL
+-R (recursive): застосувати рекурсивно до папок
+-d (default): застосувати операцію до ACL за замовчуванням
+
+Repository
+Add: add-apt-repository ppa:example/repository
+Remove: add-apt-repository --remove ppa:example/repository
