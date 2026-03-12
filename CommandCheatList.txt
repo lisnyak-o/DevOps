@@ -1,5 +1,36 @@
 Порада: Якщо ви редагували скрипт у Windows (через WSL), там могли з'явитися DOS-закінчення рядків (\r\n). Виправте це командою sed -i 's/\r$//' /usr/local/bin/logger.sh
 
+SSH + GitHub
+-------------------------------
+       #Secure 
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/id_ed25519
+chmod 644 ~/.ssh/id_ed25519.pub
+
+       #Fast Checklist ?
+- Файли: ~/.ssh/id_* — існують?
+- ssh-agent: запущено і ключ додано?
+- GitHub: публічний ключ додано в Settings → SSH and GPG keys?
+- Тест: ssh -T git@github.com — успішно?
+
+ls -la ~/.ssh
+cat ~/.ssh/id_ed25519.pub
+ssh-add -L
+
+        #Settings
+ssh-keygen -t ed25519 -C "your_email@example.com"
+# або для RSA (якщо потрібно сумісність)
+ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
+
+eval "$(ssh-agent -s)"
+ssh-add ~/.ssh/id_ed25519
+
+xclip -sel clip < ~/.ssh/id_ed25519.pub
+
+- GitHub → Settings → SSH and GPG keys → New SSH key. Встав скопійований вміст, дай назву (наприклад, Laptop Kyiv), збережи.
+
+ssh -T git@github.com
+--------------------------------------------------------------------------
 
 #MonitorTools
 
