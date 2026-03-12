@@ -24,3 +24,4 @@ This is a DevOps learning repository containing coursework, assignments, and ref
 
 - There is no build system, test framework, or linter configured in this repository.
 - Завдання можуть стосуватися середовищ Linux/WSL. При редагуванні скриптів у Windows для використання в WSL слід враховувати проблему закінчень рядків DOS (`\r\n` замість `\n`) — для виправлення використовуйте `sed -i 's/\r$//'`.
+
