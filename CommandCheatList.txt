@@ -73,6 +73,8 @@ sudo journalctl -f | grep UFW
 
 #MonitorTools
 
+ps -ef | grep <назва_процесу>
+
 ps -aux - display all processes in system
 -e: display information about all processes.
 -f: show detailed information about processes.
@@ -354,3 +356,13 @@ dpkg -s package
 
 
 nmap google.com
+
+
+sudo systemctl restart systemd-resolved.service
+
+NETSTAT & hostname
+sudo netstat -tulpn | grep :<номер_порту>
+
+Порада: Після використання set-hostname зазвичай рекомендується також оновити файл /etc/hosts
+
+hostnamectl set-hostname нова-назва
