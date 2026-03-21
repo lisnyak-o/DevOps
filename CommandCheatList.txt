@@ -359,10 +359,26 @@ nmap google.com
 
 
 sudo systemctl restart systemd-resolved.service
-
+--------------------------------------------------NETWORK--------------------------------------------------------------
 NETSTAT & hostname
 sudo netstat -tulpn | grep :<номер_порту>
+
+ss -tn : check active tcp
+ss -s : check statistics sockets
+
+1- Почати з ping — перевірити доступність.
+2- Якщо є проблема — запустити traceroute для пошуку вузла з затримкою.
+3- Переглянути активні з’єднання через ss (або netstat).
+4- Зробити нотатки у лог/README для артефактів портфоліо.
+
+sudo netstat -tulpn | grep LISTEN : показує всі відкриті TCP/UDP порти, що прослуховуються, та імена процесів.
+sudo lsof -i -P -n | grep LISTEN : детально показує, яка саме програма та її PID використовують порт
+netstat -abno | findstr :<порт> — знайдіть порт, який ви використовуєте в Linux, щоб побачити, чи приймає його Windows.
 
 Порада: Після використання set-hostname зазвичай рекомендується також оновити файл /etc/hosts
 
 hostnamectl set-hostname нова-назва
+
+IP-адреса самого WSL: hostname -I (покаже IP типу 172.x.x.x).
+IP-адреса Windows (з Linux): cat /etc/resolv.conf (шукайте IP після слова nameserver).
+Перегляд усіх інтерфейсів: ip addr show eth0
