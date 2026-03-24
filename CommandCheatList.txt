@@ -1,5 +1,14 @@
 Порада: Якщо ви редагували скрипт у Windows (через WSL), там могли з'явитися DOS-закінчення рядків (\r\n). Виправте це командою sed -i 's/\r$//' /usr/local/bin/logger.sh
 
+
+🔑 Основні системні журнали Linux
+- /var/log/messages — загальні повідомлення ядра та системи.
+- /var/log/syslog (Debian/Ubuntu) — універсальний лог для більшості сервісів.
+- /var/log/auth.log — автентифікація, sudo, ssh, безпека.
+- /var/log/kern.log — повідомлення ядра.
+- /var/log/dpkg.log — історія пакетів (APT).
+- /var/log/httpd/ або /var/log/nginx/ — журнали веб‑серверів.
+
 SSH + GitHub
 -------------------------------
        #Secure 
