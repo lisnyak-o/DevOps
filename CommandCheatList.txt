@@ -54,6 +54,12 @@ $ cat > backup.sh
 BCKUP=/ home/userid/backup-$(d ate +%d-%m-%y).tar .gz
 tar -czf $BCKUP $HOME
 
+Bash
+
+ dirs -v : check folders/Where are I visited?
+ find . -name "foo*"
+ find . -type f -name ".*"
+ ws -l text_file.txt
 UFW 
 sudo ufw reset
 sudo ufw default deny incoming
@@ -71,6 +77,9 @@ Where?
 /var/log/ufw.log
 /var/log/syslog
 
+
+uname -r
+uname -a
 Перевірки логів UFW використовуй:
 
 journalctl -u ufw
@@ -103,6 +112,13 @@ monitoring tools include "htop" and "glances" need install.
 jobs -l
 
 .SERVICE
+
+Configuration:
+   CPUQuota=20%
+   MemoryMax=bytes
+   IOWeight=disk read priority
+systemctl set-property name.service MemoryMax=bytes
+
 service --status-all - display all service
 service ngnix - path
 
@@ -111,6 +127,9 @@ service ngnix - path
 
 
 .systemd-analyze
+
+Аналіз сервісів та виявлення, які підвисають.
+systemd-analyze blame
 
 systemd-analyze unit-paths | grep '^/run'
 
@@ -170,6 +189,12 @@ ls -lrt | grep logger.sh
 Поки ви не скинете статус «failed», сервіс не захоче запускатися знову:
 
 sudo systemctl reset-failed nameservice
+
+Перезапуск сервісів, якщо були зміни в конфігах сервіса /usr/lib/systemd/system/name_service
+systemctl daemon-reload
+
+Подивитись список таймерів
+systemctl list-timers
 
 CHMOD - ЧМО-Д
 
@@ -441,6 +466,8 @@ sudo lsof -i :8080 — Хто саме зайняв порт 8080? (Покаже
 sudo lsof -i -P -n — Список усіх мережевих з'єднань без резолву імен (працює миттєво).
 sudo lsof -p [PID] — Які файли та сокети відкрив конкретний процес.
 
+lsof +L1 або lsof | grep deleted. Вона покаже видалені файли, які все ще "утримуються" процесами.
+
 3. Аналіз трафіку та пакетів (tcpdump)
 sudo tcpdump -i any port 80 -n — Дивитися HTTP трафік у реальному часі.
 sudo tcpdump -i eth0 host 1.1.1.1 — Тільки пакети від/до конкретного IP.
@@ -589,11 +616,15 @@ Permissions,  "Чому root може все, а твій юзер — ні.",  
  
 Сценарій: Твій додаток генерує мільйони крихітних лог-файлів або сесій. Місце на диску є, але ліміт інод вичерпано. Система більше не може створити жодного нового файлу.
 
-df -i — Обов'язково запам'ятай! Це перевірка заповненості інод (не місця, а саме кількості файлів)
+df -i — Це перевірка заповненості інод (не місця, а саме кількості файлів)
+Якщо df -i показав 100%, використай цю команду, щоб знайти папку, де найбільше файлів:
+find / -xdev -type d -exec sh -c 'echo "$(ls -a "$1" | wc -l) $1"' _ {} \; | sort -rn | head -n 10
 
 iotop — Аналог top, але для диска. Показує, який саме процес зараз "ґвалтує" диск записом чи читанням.
 du -sh /var/log/* — Швидкий спосіб дізнатися, яка папка "з'їла" все місце.
 lsof (List Open Files) — Дозволяє побачити, які файли зараз відкриті процесами
+
+
 
 
 #Docker
@@ -632,9 +663,6 @@ docker-compose logs -f web — дивитися "живі" логи тільки
 docker build -t pro-app .
 docker run -d -p 8080:8000 --name my-pro-container pro-app
 
-docker-compose up -d - запуск збірки знову
-
-
 як перевірити, чи потрапив секретний файл .env всередину контейнера?
 
 docker exec -it <container_id_or_name> sh (або bash)
@@ -653,3 +681,6 @@ docker logs devops-web-1
 Оскільки ми змінили код (app.py), треба оновити образ:
 docker-compose up -d --build
 (Прапор --build змушує Docker перезібрати шари, де копіюється код)
+
+мережевий міст Docker "зависає"? 
+sudo service docker restart
