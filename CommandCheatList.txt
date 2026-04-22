@@ -1,5 +1,15 @@
 Порада: Якщо ви редагували скрипт у Windows (через WSL), там могли з'явитися DOS-закінчення рядків (\r\n). Виправте це командою sed -i 's/\r$//' /usr/local/bin/logger.sh
 
+
+🔑 Основні системні журнали Linux
+- /var/log/messages — загальні повідомлення ядра та системи.
+- /var/log/syslog (Debian/Ubuntu) — універсальний лог для більшості сервісів.
+- /var/log/auth.log — автентифікація, sudo, ssh, безпека.
+- /var/log/kern.log — повідомлення ядра.
+- /var/log/dpkg.log — історія пакетів (APT).
+- /var/log/httpd/ або /var/log/nginx/ — журнали веб‑серверів.
+- /var/log/nginx/error.log — чому ваш сайт не працює
+
 SSH + GitHub
 -------------------------------
        #Secure 
@@ -17,7 +27,7 @@ ls -la ~/.ssh
 cat ~/.ssh/id_ed25519.pub
 ssh-add -L
 
-        #Settings
+        #Settings_SSH
 ssh-keygen -t ed25519 -C "your_email@example.com"
 # або для RSA (якщо потрібно сумісність)
 ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
@@ -30,9 +40,59 @@ xclip -sel clip < ~/.ssh/id_ed25519.pub
 - GitHub → Settings → SSH and GPG keys → New SSH key. Встав скопійований вміст, дай назву (наприклад, Laptop Kyiv), збережи.
 
 ssh -T git@github.com
+
+Command to Generate SSH Keys:
+Created key for local user
+sudo -u user_admin ssh-keygen -t rsa -b 4096 -f /home/user_admin/.ssh/id_rsa -N ""
+Checking key
+sudo -u user_admin ls -al /home/user_admin/.ssh
 --------------------------------------------------------------------------
+Variables in bash
+rm $( find / -name "*.tmp" )
+$ cat > backup.sh
+#Vbin/bash
+BCKUP=/ home/userid/backup-$(d ate +%d-%m-%y).tar .gz
+tar -czf $BCKUP $HOME
+
+Bash
+
+ dirs -v : check folders/Where are I visited?
+ find . -name "foo*"
+ find . -type f -name ".*"
+ ws -l text_file.txt
+UFW 
+sudo ufw reset
+sudo ufw default deny incoming
+sudo ufw default allow outgoing
+sudo ufw allow 22/tcp
+sudo ufw enable
+sudo ufw status
+
+More:
+sudo ufw allow from 203.0.113.5 to any port 22 proto tcp
+
+sudo ufw logging on
+
+Where?
+/var/log/ufw.log
+/var/log/syslog
+
+
+uname -r
+uname -a
+Перевірки логів UFW використовуй:
+
+journalctl -u ufw
+grep UFW /var/log/syslog
+
+sudo dmesg | grep UFW
+sudo journalctl -k | grep UFW
+sudo journalctl -f | grep UFW
+
 
 #MonitorTools
+
+ps -ef | grep <назва_процесу>
 
 ps -aux - display all processes in system
 -e: display information about all processes.
@@ -40,6 +100,7 @@ ps -aux - display all processes in system
 
 Use "ps -C <process name>" to display information about a specific process.
 
+ ps auxf — дерево процесів, щоб зрозуміти, "хто породив цей процес, що з'їв усю пам'ять".
  ps aux | grep ping
  ps -u
 
@@ -51,6 +112,13 @@ monitoring tools include "htop" and "glances" need install.
 jobs -l
 
 .SERVICE
+
+Configuration:
+   CPUQuota=20%
+   MemoryMax=bytes
+   IOWeight=disk read priority
+systemctl set-property name.service MemoryMax=bytes
+
 service --status-all - display all service
 service ngnix - path
 
@@ -59,6 +127,9 @@ service ngnix - path
 
 
 .systemd-analyze
+
+Аналіз сервісів та виявлення, які підвисають.
+systemd-analyze blame
 
 systemd-analyze unit-paths | grep '^/run'
 
@@ -119,7 +190,15 @@ ls -lrt | grep logger.sh
 
 sudo systemctl reset-failed nameservice
 
+Перезапуск сервісів, якщо були зміни в конфігах сервіса /usr/lib/systemd/system/name_service
+systemctl daemon-reload
+
+Подивитись список таймерів
+systemctl list-timers
+
 CHMOD - ЧМО-Д
+
+більшості веб-файлів рекомендують ставити права 644, а для папок — 755
 
 sudo chmod 755 /usr/local/bin/logger.sh
 # Переконуємось, що власник — root (але запускати буде nobody)
@@ -177,9 +256,38 @@ journalctl -f: Перегляд нових логів у реальному ча
 /var/log/dmesg: Повідомлення драйверів пристроїв.
 
 
-All users & groups
+#All users & groups
+cat /etc/passwd 
+cat /etc/group
 
- cut -d: -f1 /etc/passwd
+# Check specific group
+grep mariams /etc/group
+
+#Check Groups a user is in:
+groups newuser
+grep newuser /etc/passwd or id newuser
+
+#Add User to Group:
+sudo usermod -aG newgroup newuser
+
+ # List Users:
+cut -d: -f1 /etc/passwd
+
+# Delete User:
+sudo userdel -r newuser
+
+# Delete Group:
+sudo groupdel newgroup
+
+# Modify an existing user (e.g., change home directory)
+sudo usermod -d /new/home/directory newuser
+
+ getent group shared_group - check members
+
+ getent passwd username  # fetch user info
+ gpasswd -a john shared_group - add user
+ gpasswd -d john shared_group - delete user
+
  getent passwd - Виводить список користувачів, включаючи тих, що додані через мережеві служби.
 
  переглянути всі групи в Linux, використовуйте команду cat /etc/group
@@ -215,16 +323,16 @@ sudo chmod +t test_dir/
 
 sudo chmod g+s /mnt/shared_folder
 
-Стандартні права Linux іноді скидаються при копіюванні файлів. Для надійного налаштування "прав за замовчуванням" використовуйте POSIX ACL:
+#Стандартні права Linux іноді скидаються при копіюванні файлів. Для надійного налаштування "прав за замовчуванням" використовуйте POSIX ACL:
 sudo setfacl -d -m g:developers:rwx /srv/shared_folder.
 Флаг -d (default) встановлює правила для всіх майбутніх файлів у цій папці.
 
-UMASK
+#UMASK
 The umask value can be set in the user's shell startup files, such as ~/.bashrc or
 ~/.bash_profile.
 
 
-Встановлення ACL за замовчуванням (для нових файлів у директорії):
+#Встановлення ACL за замовчуванням (для нових файлів у директорії):
 setfacl -d -m g:groupname:rX directory
 
 Надання права читання та виконання (rX) групі:
@@ -242,7 +350,337 @@ setfacl -m u:username:r file
 -R (recursive): застосувати рекурсивно до папок
 -d (default): застосувати операцію до ACL за замовчуванням
 
-Repository
+#Repository
 Add: add-apt-repository ppa:example/repository
 Remove: add-apt-repository --remove ppa:example/repository
 
+#Sudo Settings
+ /etc/sudoers & sudoers.d
+sudo visudo -f /etc/sudoers.d/name_file
+sudo -l
+sudo cat /var/log/secure - history of sudo who are used this cmnd.
+
+#AWK
+
+sudo awk -F: '{print $1, $2, $3, $4}' /etc/shadow | head -n 5
+
+
+
+#Architecture
+dpkg --print-architecture
+
+#Packages install & using
+sudo apt-get install firewalld
+ufw, iptables...
+
+The dpkg option that completely removes a package and its configuration files is given below:
+
+sudo dpkg -P <package_name>
+
+List installed packages(APT) : apt list --installed
+
+Info about a package(APT): apt show <package_name>
+
+package managers like Portage (on Gentoo) install packages by building them from sources. APT or RPM install pre-compiled packages
+
+Remove a Package with Configuration Files: sudo apt purge package_name
+
+sudo apt full-upgrade
+
+dpkg -l | grep package
+
+ Check package
+dpkg -s package
+
+
+nmap google.com
+
+
+sudo systemctl restart systemd-resolved.service
+--------------------------------------------------NETWORK--------------------------------------------------------------
+/etc/iproute2/rt_tables — де Linux тримає назви таблиць
+
+чек-лист "Мережевого Шерлока":
+Крок                      Команда                                Що шукаємо?
+1. Локальна перевірка     curl -I localhost             Чи взагалі працює сайт "всередині"?
+2. Хто слухає порт?       ss -tulpn | grep :80          Чи не впав Nginx? Чи на ту адресу він "сів"?
+3. Внутрішній блок        sudo ufw status               Чи пускає Linux трафік ззовні на цей порт?
+4. Шлях пакета            tcpdump -i eth0 port 80       Це рівень "Про": чи бачимо ми взагалі вхідні пакети на інтерфейсі, коли пробуємо зайти на сайт?
+
+Перевірка "живучості" (Healthcheck):
+Якщо сайт не працює зовні, ти заходиш на сервер і робиш
+
+curl 127.0.0.1. 
+
+Якщо відповідь є — значить, програма працює, а проблема в мережі чи фаєрволі. Якщо відповіді немає — "впала" сама програма
+
+DNS
+/etc/resolv.conf
+/etc/wsl.conf
+/run/systemd/resolve/stub-resolv.conf - sym-link
+/etc/nsswitch.conf - check include dns or not
+
+resolvectl status - check current DNS-server
+resolvectl flush-caches - clearUP cache
+
+dig +short @8.8.8.8 google.com - check from Google DNS
+
+dig або nslookup
+
+Мережевого дебагу
+Команда                 Що вона дає ?
+host google.com,          Швидка перевірка DNS (аналог dig).
+ip route show,            "Бачиш, куди йдуть твої дані. Шукай слово default — це твій вихід у світ."
+mtr -n google.com,        "Must-have! Показує кожен ""стрибок"" (hop) пакета і де саме починаються втрати (на твоєму роутері чи у провайдера)."
+nc -zv <IP> <PORT>,       "(Netcat) Перевірка, чи відкритий порт на іншому сервері. Найшвидший спосіб дізнатися, чи пускає тебе фаєрвол сусіда."
+
+Команди для зміни маршрутизації (особливо при налаштуванні VPN або Docker)
+sudo ip route add 10.0.0.0/24 via 192.168.240.5: Сказати системі: «Якщо хочеш потрапити в мережу 10.0.0.x — іди не через стандартний шлюз, а через сусіда .5».
+sudo ip route del default: Видалити вихід в інтернет (не роби цього без потреби!).
+ip route get 8.8.8.8: Найкорисніша команда для дебагу! Вона покаже, який саме шлях обере система для конкретної адреси прямо зараз.
+
+ip route — подивитися свій "шлюз" (рядок default via ...). Якщо шлюзу немає — інтернету не буде.
+
+cat /etc/resolv.conf — подивитися, до яких DNS-серверів звертається твій Linux.
+
+dig google.com — перевірити, чи працює DNS. Якщо ping 8.8.8.8 працює, а dig google.com — ні, значить проблема в DNS-серверах.
+
+nmcli або файл /etc/network/interfaces — де налаштовується мережа в Linux (залежить від дистрибутива).
+
+
+
+NETSTAT & hostname
+
+curl ifconfig.me - Public IP
+
+curl -v <url> — показує весь процес "рукостискання" з веб-сайтом. Найкращий спосіб зрозуміти, де помилка: у сертифікаті, в мережі чи в самому коді
+
+Перевірка портів та сокетів (ss)
+ss -tulpn — Золотий стандарт. Показує всі порти, що слухають (TCP/UDP) з іменами процесів.
+ss -ant — Показати всі TCP з'єднання (включаючи активні сесії клієнтів).
+ss -s — Швидка статистика (скільки всього з'єднань, скільки в TIME_WAIT).
+ss -tp sport == :80 — Фільтрація трафіку по конкретному локальному порту.
+
+2. Пошук процесу-власника (lsof)
+sudo lsof -i :8080 — Хто саме зайняв порт 8080? (Покаже PID, User та Command).
+sudo lsof -i -P -n — Список усіх мережевих з'єднань без резолву імен (працює миттєво).
+sudo lsof -p [PID] — Які файли та сокети відкрив конкретний процес.
+
+lsof +L1 або lsof | grep deleted. Вона покаже видалені файли, які все ще "утримуються" процесами.
+
+3. Аналіз трафіку та пакетів (tcpdump)
+sudo tcpdump -i any port 80 -n — Дивитися HTTP трафік у реальному часі.
+sudo tcpdump -i eth0 host 1.1.1.1 — Тільки пакети від/до конкретного IP.
+sudo tcpdump -w debug.pcap — Записати трафік у файл для аналізу у Wireshark.
+sudo tcpdump -i any 'tcp[tcpflags] & (tcp-syn|tcp-fin) != 0' — Бачити тільки початок та кінець з'єднань.
+
+4. Налаштування мережі (ip)
+ip a — Перевірити IP-адреси та стан інтерфейсів (UP/DOWN).
+ip r — Подивитися таблицю маршрутизації (Default Gateway).
+ip -s link — Статистика помилок та втрачених пакетів на рівні "заліза".
+
+ip -br a
+
+Порада: Якщо бачите багато TIME_WAIT у ss -s, перевірте ліміт ефемерних портів командою:
+cat /proc/sys/net/ipv4/ip_local_port_range
+
+#tcpdump
+sudo tcpdump -i [interface] [filter]
+
+-i eth0: слухати конкретний інтерфейс (можна any для всіх).
+-n: не перетворювати IP в імена (як і в ss, це пришвидшує роботу).
+-v, -vv, -vvv: рівень деталізації (чим більше "v", тим більше службової інформації).
+-A: виводити вміст пакетів у форматі ASCII (зручно, щоб побачити текст HTTP-запитів).
+
+sudo tcpdump -i eth0 host api.example.com -n
+sudo tcpdump -i any port 80
+sudo tcpdump -i any port 80 and host 10.0.0.5
+
+Збереження для аналізу (PCAP)
+У реальній роботі DevOps рідко читає tcpdump прямо в терміналі на живому сервері, бо пакети летять занадто швидко. Стандартна практика — зберегти трафік у файл, а потім відкрити його в графічному інтерфейсі Wireshark.
+
+Для цього використовується прапорець -w:
+
+sudo tcpdump -i eth0 port 443 -w traffic.pcap
+sudo netstat -tulpn | grep :<номер_порту>
+
+Ось "золота трійка" команд ip:
+
+ip addr (або коротко ip a): Перевірити IP-адреси на всіх інтерфейсах. Тут ми дивимося, чи піднятий інтерфейс (UP) і яка в нього маска.
+ip route (або ip r): Таблиця маршрутизації. Тут ми дізнаємося, хто є "шлюзом за замовчуванням" (default gateway). Якщо він налаштований неправильно — інтернет на сервері не запрацює.
+ip link: Стан фізичного рівня. Дозволяє побачити MAC-адреси та чи взагалі система бачить "кабель".
+
+Команда ip route add ... metric 10 — так ти вручну кажеш системі, який шлях зробити пріоритетним.
+
+
+ss -tn : check active tcp
+ss -s : check statistics sockets
+
+1- Почати з ping — перевірити доступність.
+2- Якщо є проблема — запустити traceroute для пошуку вузла з затримкою.
+3- Переглянути активні з’єднання через ss (або netstat).
+4- Зробити нотатки у лог/README для артефактів портфоліо.
+
+traceroute / mtr — показує, на якому саме вузлі (провайдер, магістраль, дата-центр) губляться твої пакети.
+
+sudo iptables -L -n -v - "важка артилерія". Показує всі правила фільтрації.
+
+sudo netstat -tulpn | grep LISTEN : показує всі відкриті TCP/UDP порти, що прослуховуються, та імена процесів.
+sudo lsof -i -P -n | grep LISTEN : детально показує, яка саме програма та її PID використовують порт
+netstat -abno | findstr :<порт> — знайдіть порт, який ви використовуєте в Linux, щоб побачити, чи приймає його Windows.
+
+Порада: Після використання set-hostname зазвичай рекомендується також оновити файл /etc/hosts
+
+hostnamectl set-hostname нова-назва
+
+IP-адреса самого WSL: hostname -I (покаже IP типу 172.x.x.x).
+IP-адреса Windows (з Linux): cat /etc/resolv.conf (шукайте IP після слова nameserver).
+Перегляд усіх інтерфейсів: ip addr show eth0
+
+logrotate — механізм, який не дає логам "з'їсти" все місце на диску сервера
+
+/etc/logrotate.conf — головний файл налаштувань.
+/etc/logrotate.d/ — папка, де лежать окремі конфіги для кожного сервісу (nginx, mysql, syslog тощо).
+
+змінили конфіг і хочете перевірити його:
+
+sudo logrotate -d /etc/logrotate.d/myapp
+
+Прапорець -d (debug) — це "симуляція". Програма покаже, що вона збирається зробити, але не буде реально видаляти чи перейменовувати файли. Це дуже безпечно для тестів.
+
+crontab -e
+*/30 * * * * /home/lis/devops/test/check_system.sh >> /home/lis/devops/system_report.log 2>&1
+*  * * * * *  команда_яку_треба_виконати
+┬  ┬  ┬  ┬  ┬
+│  │  │  │  └─ День тижня (0-6, де 0 — неділя)
+│  │  │  └─ Місяць (1-12)
+│  │  └─ День місяця (1-31)
+│  │  └─ Година (0-23)
+│  └─ Хвилина (0-59)
+Приклади:
+30 04 * * * /path/to/script.sh — запускати щодня о 04:30 ранку.
+0 * * * * /path/to/script.sh — запускати щогодини (на нульовій хвилині).
+*/15 * * * * /path/to/script.sh — запускати кожні 15 хвилин.
+
+>> — додає новий звіт у кінець файлу (не видаляючи старі).
+2>&1 — "магічна" комбінація, яка каже Bash: "Якщо скрипт видасть помилку, запиши її в той самий файл, а не намагайся надіслати мені поштою".
+
+
+nginx
+Конфігураційні файли:
+/etc/nginx/sites-available/default - config https
+/var/www/html - path for site (default nginx search files here)
+
+sudo nginx -t - check error in config file
+sudo ufw allow 'Nginx Full' - When block site ufw, need changed to allow
+
+Згенерувати SSL сертифікат (Self-signed)
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+-keyout /etc/ssl/private/nginx-selfsigned.key \
+-out /etc/ssl/certs/nginx-selfsigned.crt
+
+#wireguard
+/etc/wireguard/wg0.conf
+
+sudo apt install wireguard -y
+
+sudo ufw allow 51820/udp
+
+sudo wg-quick up wg0
+sudo wg show
+
+Перевірка синтексу після створення файлу (перевірка локальної зони)
+sudo named-checkconf
+sudo named-checkzone lab.local /etc/bind/db.lab.local
+
+Головний інсайт: Якщо у тебе 8-ядерний процесор, то $LA = 4.0$ — це норма (завантажено лише 50% потужності). Якщо у тебе 1 ядро і $LA = 4.0$ — система "лежить" у черзі.
+
+Якщо iowait постійно високий, це сигнал про необхідність оптимізації дискових операцій або заміни дисків на швидш
+sudo apt install sysstat
+Diagnostic:
+
+top
+iostat
+iotop
+
+рядок buff/cache Це не «втрачена» пам'ять — якщо програмі знадобиться RAM, ядро миттєво звільнить цей кеш
+free -m 
+Важливо: Очищати кеш/буфер (echo 3 > /proc/sys/vm/drop_caches) у робочій системі не рекомендується, оскільки це лише сповільнить її роботу.
+
+Роботи з дисками
+Категорія,    Розуміти (Логіка),                                              Вивчити (Команди)
+Disk Space,   Видалення файлу не завжди звільняє місце миттєво.,                    "df -h, du -sh"
+Inodes,       "Файлів може бути "багато", навіть якщо вони "маленькі",               df -i
+I/O Wait,     Процесор чекає диск = диск забитий або повільний.,                     "iotop, iostat"
+Permissions,  "Чому root може все, а твій юзер — ні.",                               "chmod, chown"
+ 
+Сценарій: Твій додаток генерує мільйони крихітних лог-файлів або сесій. Місце на диску є, але ліміт інод вичерпано. Система більше не може створити жодного нового файлу.
+
+df -i — Це перевірка заповненості інод (не місця, а саме кількості файлів)
+Якщо df -i показав 100%, використай цю команду, щоб знайти папку, де найбільше файлів:
+find / -xdev -type d -exec sh -c 'echo "$(ls -a "$1" | wc -l) $1"' _ {} \; | sort -rn | head -n 10
+
+iotop — Аналог top, але для диска. Показує, який саме процес зараз "ґвалтує" диск записом чи читанням.
+du -sh /var/log/* — Швидкий спосіб дізнатися, яка папка "з'їла" все місце.
+lsof (List Open Files) — Дозволяє побачити, які файли зараз відкриті процесами
+
+
+
+
+#Docker
+Download Docker Desktop for WSL
+Збірка образу:
+docker build -t my-first-app .
+(Крапка в кінці означає "шукай Dockerfile у цій папці")
+
+Зупини та видали його (однією командою):
+docker rm -f <ID_або_ім'я>
+
+Запуск контейнера:
+docker run -d -p 8080:8000 my-first-app
+
+-d: Запустити у фоні (detached).
+
+-p 8080:8000: Прокинути порт. Зовнішній порт 8080 (твій ПК) веде на внутрішній 8000 (контейнер).
+
+Команди для очищення системи
+
+Коли ти багато експериментуєш, Docker з'їдає диск (пам'ятаєш про df -h?).
+docker ps -a — показати всі контейнери (навіть зупинені).
+docker rm <ID> — видалити контейнер.
+docker images — список образів.
+docker system prune — МАГІЧНА КОМАНДА. Видаляє всі зупинені контейнери та невикористані шари, звільняючи купу місця.
+
+Команди для керування docker-compose.yml
+
+docker-compose up -d — запустити всю "зграю" контейнерів у фоні.
+docker-compose ps — подивитися статус усіх сервісів проекту.
+docker-compose stop — зупинити все.
+docker-compose logs -f web — дивитися "живі" логи тільки веб-сервера.
+
+Збірка образу (Build)
+Оскільки ми змінили структуру Dockerfile, нам треба перезібрати образ, щоб Docker створив нові шари:
+docker build -t pro-app .
+docker run -d -p 8080:8000 --name my-pro-container pro-app
+
+як перевірити, чи потрапив секретний файл .env всередину контейнера?
+
+docker exec -it <container_id_or_name> sh (або bash)
+
+-i (interactive) — тримати вхід відкритим.
+-t (tty) — виділити віртуальний термінал (щоб це виглядало як звичайна командна строка).
+sh — запустити оболонку всередині контейнера.
+Коли ти "всередині", ти можеш просто ввести ls -la і побачити, чи є там файл .env.
+
+
+docker exec -it devops-web-1 whoami
+причину смерті контейнера:
+docker logs devops-web-1
+
+Перезберіть та запустіть:
+Оскільки ми змінили код (app.py), треба оновити образ:
+docker-compose up -d --build
+(Прапор --build змушує Docker перезібрати шари, де копіюється код)
+
+мережевий міст Docker "зависає"? 
+sudo service docker restart
