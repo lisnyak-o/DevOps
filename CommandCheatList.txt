@@ -239,7 +239,6 @@ sudo chown root:root /usr/local/bin/logger.sh
 
 Основні команди для перегляду логів:
 
-
 tail -f /var/log/syslog: Перегляд останніх 10 рядків і відстеження нових записів у реальному часі.
 
 less /var/log/syslog: Зручний перегляд великих файлів (навігація стрілками, вихід — q).
@@ -334,6 +333,20 @@ sudo setfacl -d -m g:developers:rwx /srv/shared_folder.
 The umask value can be set in the user's shell startup files, such as ~/.bashrc or
 ~/.bash_profile.
 
+#ACL 
+
+setfacl -m [user/group]:[permissions] [file/directory]
+
+для файлу: getfacl name_file
+● Щоб змінити ACL для файлу: setfacl -m u:user:permissions name_file
+
+Приклад 1: надайте доступ для читання та запису певному користувачеві
+● setfacl -m u:john:rw file.txt
+● Приклад 2: скасування дозволу на виконання для групи
+● setfacl -m g:admins:-x directory
+
+Приклад: перегляд ACL для каталогу
+○ getfacl /path/to/directory
 
 #Встановлення ACL за замовчуванням (для нових файлів у директорії):
 setfacl -d -m g:groupname:rX directory
@@ -352,6 +365,7 @@ setfacl -m u:username:r file
 -b (remove-all): видалити всі розширені ACL
 -R (recursive): застосувати рекурсивно до папок
 -d (default): застосувати операцію до ACL за замовчуванням
+
 
 #Repository
 Add: add-apt-repository ppa:example/repository
@@ -656,6 +670,172 @@ du file_name
 Дані про файл. Як подивитись, коли створений, коли змінений і т.д.
 stat auth.log
 
+----------------------------------------------------------------
+#Cgroups, systemd.slice or with service
+
+Control group (Cgroups), where?
+/etc/security/limits.conf
+
+ls -l /sys/fs/cgroup
+cat /proc/1234/cgroup
+0::/new-cgroup
+
+для автоматичного переміщення певних
+користувачів/груп/команд до груп
+/etc/cgrules.conf та /usr/lib/systemd/system/cgconfig.service
+
+Cgroup+systemd
+systemd-cgls - show cgroup hierarchy
+systemd-top - show top cgroups by their resource usage
+cgcreate : create new Cgroups
+cgset : set parameters of given cgroup
+cgexec : run the task
+cgclassify : move running task to given cgroup
+
+
+libcgroupAUR - набір автономних інструментів (cgcreate, cgclassify, збереження через cgconfig.conf).
+apt install libcgroup-dev cgroup-tools
+
+Файли systemd.slice можна використовувати для визначення власної конфігурації контрольної групи. Їх потрібно розмістити в каталозі systemd, наприклад /etc/systemd/system/. Параметри керування ресурсами, які можна призначити, задокументовані в systemd.resource-control
+
+cgroup,cgcreate, cgexec і cgclassify 
+
+ієрархію контрольних груп можна побачити за допомогою команди systemctl status
+Ім’я контрольної групи процесу можна знайти в /proc/PID/cgroup
+systemd-cgtop можна використовувати, щоб побачити використання ресурсів
+
+files : /etc/systemd/system/my.slice
+[Slice]
+CPUQuota=30%
+-----------------------------========
+[Service]
+MemoryMax=1G
+
+systemd-run --slice=my.service this command
+
+--uid=username option can be used to spawn the command as specific user
+systemd-run --uid=username --slice=my.slice this command
+
+You could run the following command:
+grep cgroup /proc/filesystems
+
+Switching to cgroups v2 requires one of the following Kernel parameters at boot time:
+● systemd.unified_cgroup_hierarchy=1 - Systemd will mount /sys/fs/cgroup as cgroup v2
+● cgroup_no_v1="all" - The kernel will disable all v1 cgroup controllers
+
+Alternatively switch to cgroup v2:
+mount -t cgroup2 none /sys/fs/cgroup
+Verify that v2 cgroups have been mounted
+
+Main foldder for cgroup
+cd /sys/fs/cgroup
+ls -F
+
+Ви побачите багато файлів, що починаються на cgroup.. Найважливіші:
+cgroup.procs: список PID (ідентифікаторів процесів) у цій групі.
+cgroup.controllers: які ресурси (cpu, memory, io) доступні для керування.
+cgroup.subtree_control: які контролери будуть передані "дітям" (підпапкам), які ви створите.
+
+User delegation
+
+systemctl edit user@1000.service
+cat /sys/fs/cgroup/user.slice/user-1000.slice/cgroup.controllers
+
+The user slice files can be placed in ~/.config/systemd/user/
+
+systemd-run --user --slice=my.slice this cmnd
+
+With libcgroup:
+
+cgcreate -a user -t user -g memory,cpu:groupname
+
+ls -l /sys/fs/cgroup/memory/groupname for v1 cgroup
+
+cat /sys/fs/cgroup/cgroup.controllers for v2 
+
+Встановлення ліміту, наприклад:
+echo "104857600" | sudo tee /sys/fs/cgroup/my-lab/memory.max
+
+Запуск процесу в групі
+Щоб процес підпадав під ліміт, його PID треба записати у файл cgroup.procs цієї групи.
+Відкрийте другий термінал і дізнайтеся його PID (echo $$). Потім у першому терміналі:
+
+echo [PID_другого_терміналу] | sudo tee /sys/fs/cgroup/my-lab/cgroup.procs
+
+Тепер усе, що ви запустите у другому терміналі, обмежене 100 мегабайтами. Якщо програма спробує спожити більше — прийде OOM Killer і завершить її.
+
+Що це дає?
+Troubleshooting: Якщо контейнер постійно падає з помилкою OOM (Out of Memory), ви можете зайти в cgroup і подивитися статистику у файлі memory.events або memory.stat
+
+Розуміння "сусіда": Ви бачите, як процеси борються за CPU (через файли cpu.max та cpu.weight)
+
+Економія: Ви розумієте, що ліміти в K8s — це не "гарантія", а записи у файловій системі Linux, які ядро має обробляти
+--------------------------------------------------------------------------------
+
+#Chrony — це сучасна та гнучка реалізація протоколу NTP (Network Time Protocol).
+
+Config chrony
+cat /etc/chrony/chrony.conf
+
+Ключові компоненти:
+
+chronyd: Фоновий процес (демон), який синхронізує час.
+chronyc: Інтерфейс командного рядка для керування та моніторингу
+
+sudo apt update && sudo apt install chrony -y
+
+systemctl enable chronyd
+
+Перевірка стану синхронізації:
+chronyc tracking
+
+chronyc sources -v
+chronyc sourcestats -v
+
+Зупитини для WSL, він там не потрібний.
+sudo systemctl stop chrony
+sudo systemctl disable chrony
+
+----------------------------------------------------------------------------------------------
+#SSHd
+Config SSHd
+/etc/ssh/sshd_config
+
+Where?
+/usr/sbin/sshd
+
+Дерево процесів
+ps axjf
+
+sudo apt install openssh-server 
+
+----------------------------------------------------------------------------------------------
+Дізнатись PID термінала:
+echo $$
+ ------------------------------------------------------------------------------
+#CHRONY
+apt install chrony -y
+
+Configuration:
+cat /etc/chrony/chrony.conf
+chronyd -t
+
+chronyc tracking
+chronyc
+chronyc sources
+chronyc sources -v
+journalctl -u chrony -n 50
+-------------------------------------------------------------------------------
+#CGROUP
+resource controllers
+cpuset
+cpu
+blkio
+memory
+cpuacct
+
+sudo systemctl set-property user-1001.slice MemoryMax=1G
+--------------------------------------------------------------------------------
 #Docker
 Download Docker Desktop for WSL
 Збірка образу:
@@ -713,3 +893,5 @@ docker-compose up -d --build
 
 мережевий міст Docker "зависає"? 
 sudo service docker restart
+Піключитись івзаэмодіти в контейнері
+docker start -ai chrony-client
