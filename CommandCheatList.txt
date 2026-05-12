@@ -32,6 +32,14 @@ ssh-keygen -t ed25519 -C "your_email@example.com"
 # або для RSA (якщо потрібно сумісність)
 ssh-keygen -t rsa -b 4096 -C "your_email@example.com"
 
+Щоб не писати щоразу довгу команду з -i та -p, створи файл ~/.ssh/config на своїй локальній машині:
+Host aws-john
+    HostName 13.62.126.185
+    User john
+    Port 2222
+    IdentityFile ~/.ssh/id_john_aws
+Тепер ти зможеш заходити просто командою: ssh aws-john
+
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_ed25519
 
@@ -46,6 +54,13 @@ Created key for local user
 sudo -u user_admin ssh-keygen -t rsa -b 4096 -f /home/user_admin/.ssh/id_rsa -N ""
 Checking key
 sudo -u user_admin ls -al /home/user_admin/.ssh
+
+#SSH+AWS
+Create key for monitor server and connect
+local pub key = /mnt/d/DevOps/monitoring.pem
+
+connect:
+ssh -i monitoring.pem ubuntu@13.62.126.185
 --------------------------------------------------------------------------
 Variables in bash
 rm $( find / -name "*.tmp" )
@@ -257,6 +272,11 @@ journalctl -f: Перегляд нових логів у реальному ча
 /var/log/kern.log: Логи ядра Linux.
 /var/log/dmesg: Повідомлення драйверів пристроїв.
 
+/var/log/apache2 - для веб-сервера
+
+Create symlink for folder 
+створи в ній "портал" на диск D: Зміни шляху /mnt/d/DevOps/Assignments/ на ~/work
+ln -s /mnt/d/DevOps/Assignments/ ~/work
 
 #All users & groups
 cat /etc/passwd 
@@ -308,6 +328,7 @@ sudo usermod -aG shared_group user2
 sudo mkdir -p /mnt/shared_folder
 
 sudo chgrp -R shared_group /mnt/shared_folder
+
 Змінити групу-власника: 
 sudo chown :developers /mbt/shared_folder
 
@@ -380,7 +401,6 @@ sudo cat /var/log/secure - history of sudo who are used this cmnd.
 #AWK
 
 sudo awk -F: '{print $1, $2, $3, $4}' /etc/shadow | head -n 5
-
 
 
 #Architecture
@@ -670,6 +690,8 @@ du file_name
 Дані про файл. Як подивитись, коли створений, коли змінений і т.д.
 stat auth.log
 
+Запустити окреме вікно, щоб відслідкувати нові підключення
+tail -f /var/log/auth.log
 ----------------------------------------------------------------
 #Cgroups, systemd.slice or with service
 
@@ -797,9 +819,23 @@ sudo systemctl stop chrony
 sudo systemctl disable chrony
 
 ----------------------------------------------------------------------------------------------
+Searching in /var/log/
+lnav 
+----------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------
+
+SYSTEM socket config:
+/etc/systemd/system/ssh.socket.d/
+----------------------------------------------------------------------------------------------
 #SSHd
 Config SSHd
 /etc/ssh/sshd_config
+# For changes to take effect, run:
+#   systemctl daemon-reload
+#   systemctl restart ssh.socket
+#   systemctl restart ssh
++++
+sudo systemctl restart ssh.service
 
 Where?
 /usr/sbin/sshd
@@ -835,6 +871,79 @@ memory
 cpuacct
 
 sudo systemctl set-property user-1001.slice MemoryMax=1G
+--------------------------------------------------------------------------------
+#monitoring
+sudo apt install monit
+
+Config for app
+sudo nano /etc/monit/conf.d/nginx
+
+sudo monit -t
+sudo monit reload
+sudo monit status nginx
+Config:
+sudo nano /etc/monit/monitrc
+
+
+
+Check service 
+sudo systemctl start nginx
+ls /run/nginx.pid
+
+Script check disk to log file
+bash ~/work/homework7/src/check_disk.sh 0
+
+Create log file:
+sudo touch /var/log/disk.log
+sudo chmod 666 /var/log/disk.log
+ls -l /var/log/disk.log
+
+cat /var/log/disk.log
+Start cron, but chenged crontab 
+* * * * * /home/lis/work/homework7/src/check_disk.sh 0
+sudo service cron start
+
+Golden standart
+htop, Iostat
+
+База даних працює повільно, хоча процесор працює нормально
+iostat -xz 2 3
+iostat -c 1 5  Розподіл лише за процесором.
+iostat -d 2 3  Статистика лише за пристроями.
+iostat -t -x 5 Розширена статистика з часовими мітками для ведення журналу.
+
+More info 
+sudo apt install atop
+
+stress or check new device
+apt install s-tui
+apt install stress-ng
+
+Networking
+sudo apt install iftop
+or
+iotop
+
+Check GPU
+sudo apt install nvtop
+
+Check CPU iMac
+asitop
+
+Popular :
+btop
+
+More powerful
+apt install linux-perf
+
+WIFI
+wavemon
+
+#ACCT
+sudo apt install acct
+sudo accton on
+Turning on process accounting, file set to the default '/var/log/account/pacct'.
+sa - monitoring user activity
 --------------------------------------------------------------------------------
 #Docker
 Download Docker Desktop for WSL
@@ -895,3 +1004,58 @@ docker-compose up -d --build
 sudo service docker restart
 Піключитись івзаэмодіти в контейнері
 docker start -ai chrony-client
+
+Системні сервіси: Docker керується через сокет
+/var/run/docker.sock
+
+
+
+--------------------------------------------------------------------------------
+#K8s
+#prometheus
+#grafana
+
+Install minikube, helm for locat tests.
+
+
+Install prometheus | grafana with helm :
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo add grafana-community https://grafana-community.github.io/helm-charts
+
+helm list -A
+helm repo update
+
+helm install prometheus prometheus-community/prometheus -n monitoring
+helm install grafana grafana-community/grafana -n monitoring
+
+helm repo list
+
+minikube (start, status)
+
+#kubens
+sudo wget -O /usr/local/bin/kubens https://raw.githubusercontent.com/ahmetb/kubectx/master/kubens
+sudo chmod +x /usr/local/bin/kubens
+kubens monitoring
+
+Create alias for kubectl
+echo 'alias k="kubectl"' >> ~/.bashrc && source ~/.bashrc
+echo 'complete -F __start_kubectl k' >> ~/.bashrc
+source ~/.bashrc
+
+kubens monitoring — перемкнув проект.
+k get all — подивився, що там "живе".
+k get pods
+k get svc
+k get secrets
+k edit secret name_package
+
+change pass & copy
+echo RkpBS2g2Q3Brak9lNGpPMmFtRlZPUE1Ib1NtesttestDTg== | base64 -d
+
+Запускаємо local prometheus|grafana (http://localhost:3000/)
+kubectl port-forward service/prometheus-server 9090:80
+kubectl port-forward svc/grafana 3000:80
+
+kubectl get (nodes, ns)
+
+kubectl create ns name_space
