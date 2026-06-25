@@ -40,6 +40,11 @@ Host aws-john
     IdentityFile ~/.ssh/id_john_aws
 Тепер ти зможеш заходити просто командою: ssh aws-john
 
+Connect with Jump ( connect via reverse-proxy and to web-server)
+
+ssh -J rooot@37.27.247.173 root@10.0.0.3
+
+
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/id_ed25519
 
@@ -75,16 +80,20 @@ Bash
  find . -name "foo*"
  find . -type f -name ".*"
  ws -l text_file.txt
-UFW 
+
+#UFW 
 sudo ufw reset
 sudo ufw default deny incoming
 sudo ufw default allow outgoing
 sudo ufw allow 22/tcp
 sudo ufw enable
 sudo ufw status
+sudo ufw status verbose
 
 More:
 sudo ufw allow from 203.0.113.5 to any port 22 proto tcp
+
+sudo ufw allow from 10.0.0.4 to any port 80 proto tcp
 
 sudo ufw logging on
 
@@ -467,7 +476,7 @@ curl 127.0.0.1.
 
 Якщо відповідь є — значить, програма працює, а проблема в мережі чи фаєрволі. Якщо відповіді немає — "впала" сама програма
 
-DNS
+#DNS
 /etc/resolv.conf
 /etc/wsl.conf
 /run/systemd/resolve/stub-resolv.conf - sym-link
@@ -621,20 +630,173 @@ crontab -e
 >> — додає новий звіт у кінець файлу (не видаляючи старі).
 2>&1 — "магічна" комбінація, яка каже Bash: "Якщо скрипт видасть помилку, запиши її в той самий файл, а не намагайся надіслати мені поштою".
 
+--------------------------------------------------NGINX--------------------------------------------------------------
+#nginx
 
-nginx
 Конфігураційні файли:
 /etc/nginx/sites-available/default - config https
 /var/www/html - path for site (default nginx search files here)
+/etc/nginx/conf.d/ - conf for server block
+/var/log/nginx/error.log - error log
 
 sudo nginx -t - check error in config file
 sudo ufw allow 'Nginx Full' - When block site ufw, need changed to allow
 
-Згенерувати SSL сертифікат (Self-signed)
-sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
--keyout /etc/ssl/private/nginx-selfsigned.key \
--out /etc/ssl/certs/nginx-selfsigned.crt
+Examples of ACL configurations:
 
+1. Setting ACL on a directory:
+● Command: setfacl -m u:john:rwx /var/www/html/director
+2. Modifying ACL entry:
+● Command: setfacl -m u:sarah:rw /var/www/html/director
+3. Removing ACL entry:
+● Command: setfacl -x u:sarah /var/www/html/directory
+4. Copying ACL from one file to another:
+● Command: getfacl /var/www/html/file.html | setfacl -R --set-file=-
+/var/www/html/newfile.html
+5. Viewing ACL:
+● Command: getfacl /var/www/html/directory
+
+
+Implementing Basic AUTH in Nginx:
+1. Create a password file:
+Example command: htpasswd -c /etc/nginx/.htpasswd username
+
+2. Configure Nginx to use Basic Authentication:
+Example configuration:
+location /protected {
+auth_basic "Restricted Content";
+auth_basic_user_file /etc/nginx/.htpasswd;
+}
+
+. Enable caching in Nginx:
+● Add the "proxy_cache_path" directive to specify the cache location and
+settings.
+1. Configure caching directives:
+● Use the "location" block to specify the files or directories to cache.
+● Add the "proxy_cache" directive to enable caching for the specified
+location.
+● Set the "proxy_cache_valid" directive to define the expiration time for
+cached files
+
+
+Configuring logging in NginX:
+
+1. Enable Configure access logs:
+Example directive: access_log /var/log/nginx/access.log combined
+
+1. Configure error logs:
+Example directive: error_log /var/log/nginx/error.log error
+Additional configuration options:
+● error_log directive parameters: Specifies the log format and severity
+level.
+● log_not_found directive: Logs errors for missing files
+---------------------------------------------------------------------------------------------------------------
+Tools for log analysis
+
+
+Various tools are available for analyzing and interpreting log files in Linux.
+These tools provide features to search, filter, and visualize log data for easier
+analysis.
+
+Some commonly used tools for log analysis include:
+● grep: Command-line tool for searching log files based on patterns.
+● awk: Powerful scripting language for processing log data.
+● sed: Stream editor for modifying log files based on patterns.
+● tail: Command for displaying the last few lines of a log file.
+● logwatch: Log analysis and reporting tool that summarizes log data.
+● ELK Stack (Elasticsearch, Logstash, Kibana): A comprehensive log
+analysis solution.
+-----------------------------------------------SSL/CERTIFICATE/Cerbot/letsencrypt----------------------------------------------------------------
+#letsencrypt
+
+sudo apt install certbot python3-certbot-(nginx_OR_apache) -y
+
+order to write to /etc/letsencrypt, /var/log/letsencrypt, /var/lib/letsencrypt; to bind to port 80
+
+Certbot stores certificates :
+/etc/letsencrypt/live/
+
+Viewing Certbot Logs:
+sudo less /var/log/letsencrypt/letsencrypt.log
+
+
+#certbot
+
+sudo apt install certbot python3-certbot-(nginx_OR_apache) -y
+
+List all your certificates:
+sudo certbot certificates
+
+update your email address:
+sudo certbot update_account --email new_email@example.com
+
+Test renewal manually:
+sudo certbot renew --dry-run -v
+
+Check rate limits:
+sudo certbot --apache --staging
+
+Test HTTPS connectivity and certificate details using :
+curl -I https://your_domain
+
+see HTTP headers confirming the HTTPS connection. For more detailed SSL information:
+curl -vI https://localhost 2>&1 | grep -i ssl
+
+Verify the certificate chain using OpenSSL:
+openssl s_client -connect your_domain:443 -servername your_domain < /dev/null 2>/dev/null | openssl x509 -noout -dates -issuer
+
+
+Edit your SSL virtual host to add enhanced security settings:
+sudo nano /etc/apache2/sites-available/your_domain-le-ssl.conf
+Add or modify SSL directives within the <VirtualHost *:443> block
+
+
+manual DNS-01 for wildcard
+sudo certbot certonly --manual --preferred-challenges dns \
+  -d example.com -d '*.example.com'
+
+DNS-01 with a DNS provider plugin, e.g., Cloudflare
+sudo apt install python3-certbot-dns-cloudflare
+sudo certbot --dns-cloudflare \
+  --dns-cloudflare-credentials ~/.secrets/cf.ini \
+  -d example.com -d '*.example.com'
+
+All ssl:
+key:
+/etc/ssl/private/
+certificate
+/etc/ssl/certs/
+
+-Enable SSL/TLS (HTTPS)
+sudo apt install certbot python3-certbot-(nginx_OR_apache) -y
+sudo certbot --nginx(--apache) -d example.com -d www.example.com
+
+How do I automate certificate renewal?
+sudo systemctl status certbot.timer
+               enable certbot.timer
+               start certbot.timer
+
+To test the renewal process, you can do a dry run with certbot:
+
+sudo certbot renew --dry-run
+
+Certbot stores certificates in /etc/letsencrypt/live/ 
+and automatically references fullchain.pem (certificate + chain) 
+and privkey.pem (private key) in Nginx configuration.
+
+SETUP OF A DOMAIN VALIDATION (DV) CERTIFICATE*
+1. Download Let’s Encrypt on your server that has the address www.oohshinywebsite.com:
+sudo apt install lets-encrypt
+2. You run it as sudo telling it you want to get a certificate for your domain
+lets-encrypt oohshinywebsite.com
+
+Згенерувати SSL сертифікат (Self-signed)
+for nginx:
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \ -keyout /etc/ssl/private/nginx-selfsigned.key \ -out /etc/ssl/certs/nginx-selfsigned.crt
+
+for apache:
+sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048   -keyout /etc/apache2/ssl/apache.key   -out /etc/apache2/ssl/apache.crt
+--------------------------------------------------------------------------------------------------------------------------------------
 #wireguard
 /etc/wireguard/wg0.conf
 
@@ -706,6 +868,125 @@ stat auth.log
 
 Запустити окреме вікно, щоб відслідкувати нові підключення
 tail -f /var/log/auth.log
+--------------------------------------------------APACHE--------------------------------------------------------------
+#Apache 
+/var/www/your_domain
+
+Check first ---->  domain’s virtual host configuration file:
+sudo nano /etc/apache2/sites-available/your_domain.conf
+
+Where are cerf and key?
+/etc/apache2/ssl/apache.crt
+/etc/apache2/ssl/apache.key
+
+sudo apachectl -t
+
+sudo journalctl -xeu apache2.service --no-pager | tail -n 20
+
+enable virtual host
+sudo a2ensite <назва_файлу_конфігурації>
+
+a2enmod <назва_модуля> — увімкнути модуль (Apache 2 Enable Module).
+a2enmod rewrite
+
+a2dismod <назва_модуля> — вимкнути модуль (Apache 2 Disable Module).
+Conf:
+The info page shows server version, loaded modules, server variables, and
+more
+http://localhost/server-info
+The status page displays details such as current requests, CPU usage,
+memory usage, and worker/thread information.
+http://localhost/server-status
+
+Diferent setting for apache:
+
+-Enable local SSL/TLS (HTTPS)
+
+sudo certbot --apache -d example.com
+
+.htaccess
+Redirect all HTTP traffic to HTTPS 
+ RewriteEngine On
+ RewriteCond %{HTTPS} !=on
+ RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+-Apache sometimes allows directory listing in order, change this:
+ Options -Indexes
+
+-Restrict Access to Apache Config File
+<Files ".htaccess">
+    Require all denied
+</Files>
+
+-Limit Request Size
+LimitRequestBody 1048576
+
+-Block Unauthorized IP Addresses
+<Directory "/var/www/html">
+    Order Deny,Allow
+    Deny from 192.168.1.100
+    Allow from all
+</Directory>
+
+-Prevent Clickjacking Attacks
+Header always append X-Frame-Options SAMEORIGIN
+
+cmnd find the path conf for apache:
+ sudo apache2ctl -V
+ 
+check syntax config
+sudo apache2ctl configtest
+
+httpd.conf where? Ubuntu
+/var/run/apache2
+Main Config: /etc/apache2/apache2.confVirtual 
+Hosts: /etc/apache2/sites-available/ (enabled by linking to /etc/sites-enabled/)
+Modules: /etc/apache2/mods-available/ (enabled by linking to /etc/mods-enabled/)
+Global Custom Snippets: /etc/apache2/conf-available/ (enabled by running sudo a2enconf <filename>)
+
+Error LOG -> Common locations include
+'/var/log/apache2/error.log' or
+'/var/log/httpd/error_log'
+
+logrotate
+/etc/logrotate.conf, а специфічні налаштування для Apache — у файлі /etc/logrotate.d/apache2
+
+Implementing Basic AUTH in Apache:
+
+-Enable the authentication module:
+a2enmod auth_basic
+
+-Create a password file:
+Example command: htpasswd -c /etc/apache2/.htpasswd username
+
+-Configure Apache to use Basic Authentication:
+Example configuration:
+<Directory /var/www/html/protected>
+AuthType Basic
+AuthName "Restricted Content"
+AuthUserFile /etc/apache2/.htpasswd
+Require valid-user
+</Directory>
+
+Enable the mod_cache module:
+Example command: a2enmod cache
+
+
+Configuring logging in Apache:
+
+1. Enable logging modules:
+Example commands: a2enmod log_config (for basic logging), a2enmod
+logio (for extended logging)
+
+1. Configure access logs:
+Example directive: CustomLog /var/log/apache2/access.log combined
+
+Common log formats in Apache:
+● combined: Includes most commonly used log fields.
+● common: Includes a subset of log fields
+
+1. Configure error logs:
+Example directive: ErrorLog /var/log/apache2/error.lo
 ----------------------------------------------------------------
 #Cgroups, systemd.slice or with service
 
@@ -840,6 +1121,7 @@ lnav
 
 SYSTEM socket config:
 /etc/systemd/system/ssh.socket.d/
+
 ----------------------------------------------------------------------------------------------
 #SSHd
 Config SSHd
@@ -886,6 +1168,7 @@ cpuacct
 
 sudo systemctl set-property user-1001.slice MemoryMax=1G
 --------------------------------------------------------------------------------
+
 #monitoring
 sudo apt install monit
 
@@ -897,6 +1180,7 @@ sudo monit -t
 sudo monit reload
 sudo monit status nginx
 sudo monit monitor nginx
+
 Config:
 sudo nano /etc/monit/monitrc
 Setting uncommit for local
@@ -963,9 +1247,20 @@ sudo apt install acct
 sudo accton on
 Turning on process accounting, file set to the default '/var/log/account/pacct'.
 sa - monitoring user activity
+--------------------------------------------------------------------------------
+#Other
+Reset session daemon for OP
+unset OP_SESSION_
 
 --------------------------------------------------------------------------------
 #Firewall
+
+When Things Go Wrong
+Can’t SSH in? Check if SSH service is allowed in your zone
+Application not accessible? Verify the port/service is open
+Changes not working? Did you reload after permanent changes?
+Locked out completely? Physical/console access needed to fix
+
 sudo apt install firewalld
 
 Файли збереження правил:
@@ -973,6 +1268,7 @@ Debian/Ubuntu: /etc/iptables/rules.v4 та /etc/iptables/rules.v6
 CentOS/RHEL: /etc/sysconfig/iptables
 Служба systemd: systemctl enable --now iptables
 
+---------------------------------------------------------- 
 Netfilter
 
 фільтрації пакетів ***************************************************************
@@ -1018,7 +1314,8 @@ nft add rule inet firewall input drop
 фільтрації пакетів******************************************************************
 
 --------------------------------------------------------------------------------
-#Docker
+#Docker 🐳
+
 Download Docker Desktop for WSL
 Збірка образу:
 docker build -t my-first-app .
@@ -1048,6 +1345,12 @@ docker-compose up -d — запустити всю "зграю" контейне
 docker-compose ps — подивитися статус усіх сервісів проекту.
 docker-compose stop — зупинити все.
 docker-compose logs -f web — дивитися "живі" логи тільки веб-сервера.
+
+Очистити Volumes (дані):
+docker-compose down -v
+Якщо контейнер працює:
+docker volume ls          # показати всі томи
+docker volume rm <ім'я>   # видалити потрібний
 
 Збірка образу (Build)
 Оскільки ми змінили структуру Dockerfile, нам треба перезібрати образ, щоб Docker створив нові шари:
@@ -1081,6 +1384,12 @@ docker start -ai chrony-client
 Системні сервіси: Docker керується через сокет
 /var/run/docker.sock
 
+Надання сили через setcap для юзера. 
+Спеціальні дозволи (Capabilities): У Linux замість повних прав root можна дати конкретному файлу чи користувачу лише одну маленьку суперсилу. 
+Для утиліти ping потрібна можливість працювати з сирими мережевими сокетами. Ця суперсила називається CAP_NET_RAW.
+Права залишаться розділеними!
+
+setcap cap_net_raw+ep /bin/ping
 
 
 --------------------------------------------------------------------------------
@@ -1133,12 +1442,14 @@ kubectl get (nodes, ns)
 
 kubectl create ns name_space
 
-
+---------------------------------------------------------- 
 #VAGRANT
-vssh
+vagrant ssh = alias: vssh 
+nano ~/.bashrc
 
 Port forwarding:
 Vagrantfile: config.vm.network "forwarded_port", guest: 80, host: 8080
+ 
  
 Created folder vagrant:
 ~/work/vagrant_test_windows
@@ -1150,4 +1461,62 @@ vagrant +
  status
  destroy
  box (list, remove name_box)
- global status
+ global
+
+Check ssh
+vagrant ssh-config
+
+ Check syntax vagrant 
+ vagrant validate
+
+---------------------------------------------------------- 
+#GitLab
+ sudo gitlab-ctl 
+ status
+ restart
+ reconfigure
+ tail postgresql
+ tail puma
+---------------------------------------------------------- 
+#Bash setting install zsh
+
+sudo apt update && sudo apt install zsh git curl -y
+
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+
+Set zsh to default in wsl
+chsh -s /usr/bin/zsh
+---------------------------------------------------------- 
+ #Ansible
+sudo apt update
+sudo apt install software-properties-common
+sudo add-apt-repository --yes --update ppa:ansible/ansible
+sudo apt install ansible
+
+Check syntax playbook
+ansible-playbook db_playbook.yml --syntax-check -i hosts.ini
+----------------------------------------------------------
+ #1Password cli
+ op account add
+op.exe run --env-file=.env -- name_app (vagrant up)
+----------------------------------------------------------
+#AWS (Розширення диска всередині Ubuntu Server)
+ Check File system:
+ lsblk
+ df -h
+Заходимо:
+Elastic Block Store -> Volumes.
+
+Знайдіть у списку том, який прикріплений до вашого інстансу.
+
+Виберіть його, натисніть кнопку Actions у верхньому правому куті -> Modify volume.
+
+У полі Size змініть 8 на хоча б 30 або 40 (для стабільної роботи GitLab цього вистачить на перший час). Натисніть Modify.
+
+Зачекайте 1-2 хвилини.
+
+Розширюємо розділ (partition)
+sudo growpart /dev/nvme0n1 1
+Розширюємо файлову систему (filesystem)
+sudo resize2fs /dev/root
+
