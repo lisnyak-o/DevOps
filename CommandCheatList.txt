@@ -40,8 +40,9 @@ Host aws-john
     IdentityFile ~/.ssh/id_john_aws
 Тепер ти зможеш заходити просто командою: ssh aws-john
 
-Connect with Jump ( connect via reverse-proxy and to web-server)
+Connect with Jump ( connect via reverse-proxy to web-server)
 
+ssh -J root@IPjumphost root@IP-server
 ssh -J rooot@37.27.247.173 root@10.0.0.3
 
 
@@ -477,13 +478,19 @@ curl 127.0.0.1.
 Якщо відповідь є — значить, програма працює, а проблема в мережі чи фаєрволі. Якщо відповіді немає — "впала" сама програма
 
 #DNS
+sudo systemctl enable --now systemd-resolved
+/etc/systemd/resolved.conf
+
+sudo resolvectl statistics
+resolvectl status - check current DNS-server
+resolvectl flush-caches - clearUP cache
+
 /etc/resolv.conf
 /etc/wsl.conf
 /run/systemd/resolve/stub-resolv.conf - sym-link
 /etc/nsswitch.conf - check include dns or not
 
-resolvectl status - check current DNS-server
-resolvectl flush-caches - clearUP cache
+
 
 dig +short @8.8.8.8 google.com - check from Google DNS
 
@@ -509,8 +516,76 @@ dig google.com — перевірити, чи працює DNS. Якщо ping 8.
 
 nmcli або файл /etc/network/interfaces — де налаштовується мережа в Linux (залежить від дистрибутива).
 
+dnsmasq
 
+dns-cache-chrome
+Clearup chache Браузер Chrome
+chrome://net-internals/#dns
+--------------------------------------------------------------------------
+#json
+№jq
+На відміну від sedабо awk, jqрозуміє структуру JSON та правильно обробляє вкладені об'єкти та масиви.
 
+sudo apt install jq
+jq --version
+
+file local /home/lis/seaCreatures.json
+Work with json file use jq:
+
+jq '.' seaCreatures.json
+jq '.[]' seaCreatures.json
+jq -r '.[] | .name' seaCreatures.json (this is -r without ")
+
+jq '[.[] | .clams]' seaCreatures.json
+jq 'map(.clams)' seaCreatures.json
+
+jq 'map(select(.type == "dolphin"))' seaCreatures.json
+jq 'map(select(.type == "dolphin").clams)' seaCreatures.json
+
+jq '{ creatures: map(.name), totalClams: map(.clams) | add, totalDolphinClams: map(select(.type == "dolphin").clams) | add }' seaCreatures.json
+
+Для дуже великих файлів використовуйте опцію --streamпоступової обробки JSON:
+jq --stream 'select(.[0] | length == 2) | .[1]' large-file.json
+
+ Фільтрація з економним використанням пам'яті
+Під час обробки великих наборів даних ефективно комбінуйте фільтри:
+jq -c '.[] | select(.type == "dolphin") | {name: .name, clams: .clams}' seaCreatures.json
+
+Обробка kubectl виводу
+Витяг конкретної інформації з ресурсів Kubernetes:
+kubectl get pods -o json | jq '.items[] | select(.status.phase == "Running") | {name: .metadata.name, node: .spec.nodeName}'
+
+ Інтеграція конвеєра CI/CD
+Використання jq в діях GitHub або GitLab CI:
+# GitHub Actions example
+- name: Extract version
+  run: |
+    VERSION=$(jq -r '.version' package.json)
+    echo "VERSION=$VERSION" >> $GITHUB_ENV
+
+Перевірка JSON
+Перевірте структуру JSON перед обробкою:
+jq '. as $data | if $data | type == "object" then $data else error("Invalid JSON structure") end' input.json
+
+Витончена обробка помилок
+Коректно обробляйте відсутні поля:
+jq '.creatures[]? | {name: .name, clams: (.clams // 0)}' seaCreatures.json
+
+1. Обробка відповідей API
+Ефективна обробка складних відповідей API:
+# Extract paginated results
+curl -s "https://api.github.com/repos/stedolan/jq/issues" | jq '.items[] | {title: .title, state: .state, created: .created_at}'
+
+2. Інтеграція конвеєра даних
+Перетворення даних між різними системними форматами:
+# Convert JSON to CSV for database import
+jq -r '.[] | [.name, .type, .clams] | @csv' seaCreatures.json > creatures.csv
+
+3. Моніторинг та оповіщення
+Створіть панелі моніторингу за допомогою jq:
+# Extract metrics for monitoring
+kubectl top pods --no-headers | jq -R 'split(" ") | {name: .[0], cpu: .[1], memory: .[2]}'
+--------------------------------------------------------------------------
 NETSTAT & hostname
 
 Check gateway in system:
@@ -796,7 +871,23 @@ sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048 \ -keyout /etc/ssl/priv
 
 for apache:
 sudo openssl req -x509 -nodes -days 365 -newkey rsa:2048   -keyout /etc/apache2/ssl/apache.key   -out /etc/apache2/ssl/apache.crt
---------------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------python-----------------------------------------------------------
+ #python
+ environment install linux
+ apt install python3.12-venv
+
+Create a project folder and a .venv folder within:
+python3 -m venv .venv
+
+Activate the environment:
+. .venv/bin/activate
+
+off env in bash
+deactivate 
+
+install flask 
+pip install Flask
+---------------------------------------------------------------------------------------------------------------
 #wireguard
 /etc/wireguard/wg0.conf
 
