@@ -1,0 +1,148 @@
+=== 1. GET ALL STUDENTS (INITIAL) ===
+Status Code: 200
+Response Body:
+[]
+----------------------------------------
+=== 2. POST STUDENT 1 ===
+Status Code: 201
+Response Body:
+{
+    "age": "20",
+    "first_name": "Олександр",
+    "id": "1",
+    "last_name": "Петренко"
+}
+----------------------------------------
+=== 2. POST STUDENT 2 ===
+Status Code: 201
+Response Body:
+{
+    "age": "22",
+    "first_name": "Марія",
+    "id": "2",
+    "last_name": "Іванова"
+}
+----------------------------------------
+=== 2. POST STUDENT 3 ===
+Status Code: 201
+Response Body:
+{
+    "age": "19",
+    "first_name": "Дмитро",
+    "id": "3",
+    "last_name": "Коваленко"
+}
+----------------------------------------
+=== 3. GET ALL STUDENTS AFTER POST ===
+Status Code: 200
+Response Body:
+[
+    {
+        "age": "20",
+        "first_name": "Олександр",
+        "id": "1",
+        "last_name": "Петренко"
+    },
+    {
+        "age": "22",
+        "first_name": "Марія",
+        "id": "2",
+        "last_name": "Іванова"
+    },
+    {
+        "age": "19",
+        "first_name": "Дмитро",
+        "id": "3",
+        "last_name": "Коваленко"
+    }
+]
+----------------------------------------
+=== 4. PATCH STUDENT 2 (AGE TO 23) ===
+Status Code: 200
+Response Body:
+{
+    "age": "23",
+    "first_name": "Марія",
+    "id": "2",
+    "last_name": "Іванова"
+}
+----------------------------------------
+=== 5. GET STUDENT 2 BY ID ===
+Status Code: 200
+Response Body:
+{
+    "age": "23",
+    "first_name": "Марія",
+    "id": "2",
+    "last_name": "Іванова"
+}
+----------------------------------------
+=== 6. PUT STUDENT 3 ===
+Status Code: 200
+Response Body:
+{
+    "age": "25",
+    "first_name": "Тарас",
+    "id": "3",
+    "last_name": "Шевченко"
+}
+----------------------------------------
+=== 7. GET STUDENT 3 BY ID ===
+Status Code: 200
+Response Body:
+{
+    "age": "25",
+    "first_name": "Тарас",
+    "id": "3",
+    "last_name": "Шевченко"
+}
+----------------------------------------
+=== 8. GET ALL STUDENTS ===
+Status Code: 200
+Response Body:
+[
+    {
+        "age": "20",
+        "first_name": "Олександр",
+        "id": "1",
+        "last_name": "Петренко"
+    },
+    {
+        "age": "23",
+        "first_name": "Марія",
+        "id": "2",
+        "last_name": "Іванова"
+    },
+    {
+        "age": "25",
+        "first_name": "Тарас",
+        "id": "3",
+        "last_name": "Шевченко"
+    }
+]
+----------------------------------------
+=== 9. DELETE STUDENT 1 ===
+Status Code: 200
+Response Body:
+{
+    "message": "Student with ID 1 successfully deleted"
+}
+----------------------------------------
+=== 10. GET ALL STUDENTS (FINAL) ===
+Status Code: 200
+Response Body:
+[
+    {
+        "age": "23",
+        "first_name": "Марія",
+        "id": "2",
+        "last_name": "Іванова"
+    },
+    {
+        "age": "25",
+        "first_name": "Тарас",
+        "id": "3",
+        "last_name": "Шевченко"
+    }
+]
+----------------------------------------
