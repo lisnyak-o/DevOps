@@ -34,28 +34,20 @@ pipeline {
         }
 
         stage('Security Scan (Trivy)') {
-            agent {
-                docker { 
-                    image 'aquasec/trivy:latest'
-                    // Прокидаємо сокет та кеш для Trivy, щоб він працював миттєво
-                    args '-v /var/run/docker.sock:/var/run/docker.sock -v /tmp/trivy-cache:/root/.cache/'
-                }
-            }
             steps {
                 echo 'Сканування образу на вразливості (CVE) за допомогою Trivy'
-                // Скануємо образ. Наразі використовуємо конфіг, який просто покаже звіт, але не зупинить білд
-                sh "trivy image --severity HIGH,CRITICAL ${env.DOCKER_HUB_USER}/${env.TEST_IMAGE}:${env.BUILD_NUMBER}"
-                
-                /* Коли будете готові ламати білд при знаходженні дірок:
-                sh "trivy image --exit-code 1 --severity CRITICAL ${env.DOCKER_HUB_USER}/${env.TEST_IMAGE}:${env.BUILD_NUMBER}"
-                */
-            }
+                sh """
+                    docker run --rm \
+                    -v /var/run/docker.sock:/var/run/docker.sock \
+                    -v /tmp/trivy-cache:/root/.cache/ \
+                    aquasec/trivy:latest image --severity HIGH,CRITICAL ${env.FULL_IMAGE_NAME}
+                """
+              }
         }
 
         stage('Test & Push Image') {
             steps {
                 script {
-                    // Оскільки ми розбили етапи, нам потрібно знову ініціалізувати об'єкт образу для плагіна
                     def myImage = docker.image("${env.FULL_IMAGE_NAME}")
 
                     echo 'Тестовий запуск створеного контейнера'
