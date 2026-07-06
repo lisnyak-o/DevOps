@@ -42,7 +42,7 @@ pipeline {
                     -v /tmp/trivy-cache:/root/.cache/ \
                     aquasec/trivy:latest image --severity HIGH,CRITICAL ${env.FULL_IMAGE_NAME}
                 """
-              }
+            }
         }
 
         stage('Test & Push Image') {
@@ -63,6 +63,24 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy App') {
+            steps {
+                echo 'Continuous Deployment'
+                script {
+                    // 1. Спочатку зупиняємо та видаляємо старий контейнер застосунку, якщо він уже запущений (щоб не було конфлікту портів)
+                    sh 'docker stop staging || true'
+                    sh 'docker rm staging || true'
+                    
+                    // 2. Запускаємо новий контейнер із Docker Hub (тег latest), прокидаючи його на порт 8081
+                    echo "Запуск нової версії застосунку на порті 8081..."
+                    sh "docker run -d --name staging -p 8081:80 staging || docker run -d --name staging -p 8081:80 ${env.FULL_IMAGE_NAME}"
+                    
+                    echo "Перевірка статусу запущеного застосунку:"
+                    sh 'docker ps -f name=staging'
+                }
+            }
+        }
     }
 
     post {
@@ -72,7 +90,7 @@ pipeline {
             sh "docker rmi ${env.DOCKER_HUB_USER}/${env.TEST_IMAGE}:latest || true"
         }
         success {
-            echo 'Пайплайн успішно завершено! Образ перевірено сканером Trivy та доставлено.'
+            echo 'Пайплайн успішно завершено! Образ перевірено та задеплоєно на порт 8081.'
         }
         failure {
             echo 'Помилка під час збірки, сканування або деплою! Перевірте лог.'
