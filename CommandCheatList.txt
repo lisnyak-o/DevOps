@@ -881,12 +881,34 @@ python3 -m venv .venv
 
 Activate the environment:
 . .venv/bin/activate
+source venv/bin/activate
 
 off env in bash
 deactivate 
 
 install flask 
 pip install Flask
+-----------------------------------------------Test/Frameworks-----------------------------------------------------------
+Always create test env virtualenv & venv (python)
+source venv/bin/activate
+
+pip install pytest
+
+Приклади популярних плагінів:
+● pytest-cov — для аналізу покриття коду тестами
+● pytest-xdist — для паралельного виконання тестів
+● pytest-html — для генерації HTML-звітів
+● pytest-django — для тестування Django-застосунків
+● pytest-flask — для тестування Flask-застосунків
+● pytest-mock — для спрощеного використання моків та патчів
+
+декоратора @pytest.mark. Ці маркери
+виступають як анотації, які можна застосовувати до окремих тестових функцій або цілих тестових модулів.
+Наприклад, можна створити маркери @pytest.mark.smoke для smoke-тестів або
+@pytest.mark.performance для тестів продуктивності.
+
+pytest -m smoke
+
 ---------------------------------------------------------------------------------------------------------------
 #wireguard
 /etc/wireguard/wg0.conf
@@ -1568,6 +1590,32 @@ vagrant ssh-config
  reconfigure
  tail postgresql
  tail puma
+--------------------------Jenkins-------------------------------- 
+docker run -d \
+  -p 8080:8080 \
+  -p 50000:50000 \
+  -v jenkins_home:/var/jenkins_home \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  --name jenkins-master \
+  --restart unless-stopped \
+  jenkins/jenkins:lts
+
+  or only for test (don`t use root)
+docker run -d \
+  -p 8080:8080 \
+  -p 50000:50000 \
+  -v jenkins_home:/var/jenkins_home \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -v /usr/bin/docker:/usr/bin/docker \
+  --name jenkins-master \
+  --user root \
+  --restart unless-stopped \
+  jenkins/jenkins:lts
+
+http://localhost:8080
+
+look first install password:
+docker logs jenkins-master
 ---------------------------------------------------------- 
 #Bash setting install zsh
 
