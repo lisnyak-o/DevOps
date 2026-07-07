@@ -44,7 +44,7 @@ pipeline {
                     --format template \
                     --template - \
                     --output trivy-report.html \
-                    --severity HIGH,CRITICAL ${env.FULL_IMAGE_NAME}
+                    --severity HIGH,CRITICAL ${env.FULL_IMAGE_NAME} > trivy-report.html
                 """
                 archiveArtifacts artifacts: 'trivy-report.html', allowEmptyArchive: false
             }
