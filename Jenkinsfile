@@ -36,12 +36,18 @@ pipeline {
         stage('Security Scan (Trivy)') {
             steps {
                 echo 'Сканування образу на вразливості (CVE) за допомогою Trivy'
+                sh 'wget https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl -O html.tpl'
                 sh """
                     docker run --rm \
                     -v /var/run/docker.sock:/var/run/docker.sock \
                     -v /tmp/trivy-cache:/root/.cache/ \
-                    aquasec/trivy:latest image --severity HIGH,CRITICAL ${env.FULL_IMAGE_NAME}
+                    -v \$(pwd):/workspace -w /workspace \
+                    aquasec/trivy:latest image \
+                    --format template --template "@html.tpl" \
+                    --output trivy-report.html \
+                    --severity HIGH,CRITICAL ${env.FULL_IMAGE_NAME}
                 """
+                archiveArtifacts artifacts: 'trivy-report.html', allowEmptyArchive: false
             }
         }
 
@@ -68,13 +74,11 @@ pipeline {
             steps {
                 echo 'Continuous Deployment'
                 script {
-                    // 1. Спочатку зупиняємо та видаляємо старий контейнер застосунку, якщо він уже запущений (щоб не було конфлікту портів)
                     sh 'docker stop staging || true'
                     sh 'docker rm staging || true'
                     
-                    // 2. Запускаємо новий контейнер із Docker Hub (тег latest), прокидаючи його на порт 8081
                     echo "Запуск нової версії застосунку на порті 8081..."
-                    sh "docker run -d --name staging -p 8081:80 staging || docker run -d --name staging -p 8081:80 ${env.FULL_IMAGE_NAME}"
+                    sh "docker run -d --name staging -p 8081:80 ${env.FULL_IMAGE_NAME}"
                     
                     echo "Перевірка статусу запущеного застосунку:"
                     sh 'docker ps -f name=staging'
@@ -90,7 +94,7 @@ pipeline {
             sh "docker rmi ${env.DOCKER_HUB_USER}/${env.TEST_IMAGE}:latest || true"
         }
         success {
-            echo 'Пайплайн успішно завершено! Образ перевірено та задеплоєно на порт 8081.'
+            echo 'Пайплайн успішно завершено! Образ перевірено та задеплоєно на порт 8081, звіт збережено.'
         }
         failure {
             echo 'Помилка під час збірки, сканування або деплою! Перевірте лог.'
