@@ -41,6 +41,12 @@ pipeline {
                     def jenkinsContainerId = sh(script: "hostname", returnStdout: true).trim()
 
                     sh """
+                        # Оновлюємо базу вразливостей
+                        docker run --rm \
+                        -v /tmp/trivy-cache:/root/.cache/ \
+                        aquasec/trivy:latest image --download-db-only
+
+                        # Сканування образу
                         docker run --rm \
                         -v /var/run/docker.sock:/var/run/docker.sock \
                         -v /tmp/trivy-cache:/root/.cache/ \

@@ -1,7 +1,6 @@
-FROM ubuntu:20.04
+FROM alpine:3.18
 
-RUN apt-get update && apt-get install -y curl
-RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
 
 USER appuser
 
