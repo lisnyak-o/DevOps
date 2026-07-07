@@ -36,7 +36,7 @@ pipeline {
         stage('Security Scan (Trivy)') {
             steps {
                 echo 'Сканування образу на вразливості (CVE) за допомогою Trivy'
-                sh 'wget https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl -O html.tpl'
+                sh 'curl -sL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/html.tpl -O html.tpl'
                 sh """
                     docker run --rm \
                     -v /var/run/docker.sock:/var/run/docker.sock \
