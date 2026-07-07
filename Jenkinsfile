@@ -36,17 +36,17 @@ pipeline {
         stage('Security Scan (Trivy)') {
             steps {
                 echo 'Сканування образу на вразливості (CVE) за допомогою Trivy'
-                sh '''
+                sh """
                     docker run --rm \
                     -v /var/run/docker.sock:/var/run/docker.sock \
                     -v /tmp/trivy-cache:/root/.cache/ \
                     -v ${WORKSPACE}:/workspace -w /workspace \
                     aquasec/trivy:latest image \
                     --format template \
-                    --template "@trivy-html.tpl" \
+                    --template @trivy-html.tpl \
                     --output trivy-report.html \
-                    --severity HIGH,CRITICAL $FULL_IMAGE_NAME
-                '''
+                    --severity HIGH,CRITICAL ${env.FULL_IMAGE_NAME}
+                """
                 archiveArtifacts artifacts: 'trivy-report.html', allowEmptyArchive: false
             }
         }
