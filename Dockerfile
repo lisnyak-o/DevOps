@@ -1,8 +1,7 @@
-# Використовуємо стабільний та легковаговий образ на базі Alpine (ISO 27001: мінімізація поверхні атаки)
-FROM alpine:3.18
+FROM ubuntu:20.04
 
-# Створюємо невибагливого користувача, щоб не запускати застосунок від імені root
-RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+RUN apt-get update && apt-get install -y curl
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
 
 USER appuser
 
