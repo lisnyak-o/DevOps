@@ -1491,7 +1491,7 @@ docker-compose up -d --build
 
 мережевий міст Docker "зависає"? 
 sudo service docker restart
-Піключитись івзаэмодіти в контейнері
+Піключитись і взаэмодіти в контейнері
 docker start -ai chrony-client
 
 Системні сервіси: Docker керується через сокет
@@ -1504,7 +1504,9 @@ docker start -ai chrony-client
 
 setcap cap_net_raw+ep /bin/ping
 
+Дізнаємося внутрішню IP-адресу docker-images
 
+docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' name_image
 --------------------------------------------------------------------------------
 #K8s
 #prometheus
