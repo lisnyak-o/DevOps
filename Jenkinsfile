@@ -43,7 +43,7 @@ pipeline {
                     -v $(pwd):/workspace -w /workspace \
                     aquasec/trivy:latest image \
                     --format template \
-                    --template "@contrib/html.tpl" \
+                    --template "@/usr/share/trivy/templates/html.tpl" \
                     --output trivy-report.html \
                     --severity HIGH,CRITICAL $FULL_IMAGE_NAME
                 '''
