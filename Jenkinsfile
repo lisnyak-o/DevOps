@@ -36,20 +36,23 @@ pipeline {
         stage('Security Scan (Trivy)') {
             steps {
                 echo 'Сканування образу на вразливості (CVE) за допомогою Trivy'
-                sh """
-                    cp trivy-html.tpl /tmp/trivy-html.tpl
-                    
-                    docker run --rm \
-                    -v /var/run/docker.sock:/var/run/docker.sock \
-                    -v /tmp:/cdn-tmp \
-                    aquasec/trivy:latest image \
-                    --format template \
-                    --template @/cdn-tmp/trivy-html.tpl \
-                    --output /cdn-tmp/trivy-report.html \
-                    --severity HIGH,CRITICAL ${env.FULL_IMAGE_NAME}
-                    
-                    cp /tmp/trivy-report.html trivy-report.html
-                """
+                script {
+                    // Отримуємо ID контейнера, в якому зараз працює сам Jenkins
+                    def jenkinsContainerId = sh(script: "hostname", returnStdout: true).trim()
+
+                    sh """
+                        docker run --rm \
+                        -v /var/run/docker.sock:/var/run/docker.sock \
+                        -v /tmp/trivy-cache:/root/.cache/ \
+                        --volumes-from ${jenkinsContainerId} \
+                        -w ${WORKSPACE} \
+                        aquasec/trivy:latest image \
+                        --format template \
+                        --template @trivy-html.tpl \
+                        --output trivy-report.html \
+                        --severity HIGH,CRITICAL ${env.FULL_IMAGE_NAME}
+                    """
+                }
                 archiveArtifacts artifacts: 'trivy-report.html', allowEmptyArchive: false
             }
         }
