@@ -14,12 +14,9 @@ pipeline {
         }
 
         stage('Lint Dockerfile') {
-            agent {
-                docker { image 'hadolint/hadolint:latest-alpine' }
-            }
             steps {
                 echo 'Перевірка Dockerfile на помилки безпеки через Hadolint'
-                sh 'hadolint Dockerfile || true'
+                sh 'docker run --rm -i hadolint/hadolint:latest-alpine hadolint - < Dockerfile || true'
             }
         }
 
