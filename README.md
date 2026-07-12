@@ -59,8 +59,10 @@
 - [x] Оркестрація локальних ВМ (Vagrant) та конфігурація через Ansible.
 - [x] REST API, python basic, HTTP requests
 - [x] Контейнеризація застосунків (Docker).
-- [ ] Глибоке занурення в Kubernetes (K8s).
+- [x] hashicorp Vault : base конфігурація, ініціалізація, безпека ключів та постійне сховище.
+- [x] Jenkins base pipeline CI/CD
 - [ ] Побудова CI/CD конвеєрів (GitHub Actions / GitLab CI).
+- [ ] Глибоке занурення в Kubernetes (K8s).
 - [ ] Моніторинг та логування (Prometheus, Grafana, ELK stack).
 
 
